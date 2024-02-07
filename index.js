@@ -1,53 +1,41 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { RouterProvider, createBrowserRouter } from 'react-router-dom';
+const express = require('express');
+const cors = require('cors');
+const mongoose = require('mongoose'); // Import mongoose without destructuring
+require('dotenv').config();
+const upload = require('express-fileupload')
 
-import './index.css';
-import Layout from './Components/Layout';
-import ErrorPage from './pages/ErrorPage';
-import Home from './pages/Home';
-import PostDetail from './pages/PostDetail';
-import Register from './pages/Register';
-import Login from './pages/Login';
-import UserProfile from './pages/UserProfile';
-import Authors from './pages/Authors';
-import CreatePost from './pages/CategoryPosts';
-import EditPost from './pages/EditPosts';
-import DeletePost from './pages/DeletePosts';
-import CategoryPosts from './pages/CategoryPosts';
-import AuthorPosts from './pages/AuthorPosts';
-import Dashboards from './pages/Dashboard';
-import Logout from './pages/Logout';
-import UserProvider from './context/UserContext';
+const userRoutes = require('./routes/userRoutes');
+const postRoutes = require('./routes/postRoutes');
+const { notfound, errorHandler } = require('./middleware/errorMiddleware');
 
+const app = express();
 
+const uri = "mongodb+srv://emmanuellalubinda:5INoz2bADXU1866b@cluster0.fm3eejv.mongodb.net/myfirstdb?retryWrites=true&w=majority"
 
-const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <UserProvider><Layout/></UserProvider>,
-    errorElement: <ErrorPage/>,
-    children: [
-       {index: true, element: <Home />},
-       {path: "posts/:id", element: <PostDetail />},
-       {path: 'register', element: <Register />},
-       {path: 'login', element: <Login />},
-       {path: "profile/:id", element: <UserProfile />},
-       {path: 'authors', element: <Authors />},
-       {path: 'create', element: <CreatePost />},
-       {path: 'posts/:id/edit', element: <EditPost />},
-       {path: 'posts/:id/delete', element: <DeletePost />},
-       {path: 'posts/categories/:category', element: <CategoryPosts />},
-       {path: 'posts/users/:id/', element: <AuthorPosts />},
-       {path: 'myposts/:id', element: <Dashboards />},
-       {path: 'logout', element: <Logout />},
-    ]
+async function connect() {
+  try {
+    await mongoose.connect(uri);/* { useNewUrlParser: true, useUnifiedTopology: true });*/
+    console.log("Connected to MongoDB");
+  } catch (error) {
+    console.error(error);
   }
-])
+}
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(
-  <React.StrictMode>
-    <RouterProvider router = {router} />
-  </React.StrictMode>
-);
+app.use(express.json({ extended: true }));
+app.use(express.urlencoded({ extended: true }));
+app.use(cors({ credentials: true, origin: "http://localhost:3000" }));
+app.use(upload())
+app.use('/uploads', express.static(__dirname + '/uploads'))
+
+app.use('/api/users', userRoutes);
+app.use('/api/posts', postRoutes);
+
+app.use(notfound);
+app.use(errorHandler);
+
+connect('mongodb');
+
+app.listen(5001, () => {
+  console.log("Server running on port 5001");
+});
+
